@@ -1,11 +1,11 @@
 [CmdletBinding()]
-param([Parameter(Mandatory=$true)][string]$PgRoot,[Parameter(Mandatory=$true)][int]$PgPort)
+param([Parameter(Mandatory=$true)][string]$PgRoot,[Parameter(Mandatory=$true)][int]$PgPort,[Parameter(Mandatory=$true)][int]$PostgreSqlMajor)
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $bin=Join-Path $PgRoot 'bin'
 $tmp=if($env:RUNNER_TEMP){$env:RUNNER_TEMP}else{[IO.Path]::GetTempPath()}
-$data=Join-Path $tmp 'pgextwin-bgw-pg17-cluster'
-$log=Join-Path $tmp 'pgextwin-bgw-pg17.log'
+$data=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-cluster"
+$log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor.log"
 $sql=Join-Path $tmp 'pgextwin-bgw-prep.sql'
 if(Test-Path $data){Remove-Item $data -Recurse -Force}
 if(Test-Path $log){Remove-Item $log -Force}
@@ -34,6 +34,26 @@ SELECT partman.create_parent(
 '@ | Set-Content $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'least privilege setup failed'}
+    # Deliberately remove the highest-numbered future child, then require
+    # background maintenance to replenish the set without a manual call.
+    $countCmd="SELECT count(*) FROM pg_inherits WHERE inhparent='public.pgextwin_bgw_parent'::regclass"
+    $expected=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
+    if($expected -lt 2){throw "Expected multiple children before removal, found $expected"}
+    @'
+DO $
+DECLARE target regclass;
+BEGIN
+  SELECT inhrelid::regclass INTO target FROM pg_inherits
+    WHERE inhparent = 'public.pgextwin_bgw_parent'::regclass
+    ORDER BY inhrelid::regclass::text DESC LIMIT 1;
+  IF target IS NULL THEN RAISE EXCEPTION 'No removable child'; END IF;
+  EXECUTE format('DROP TABLE %s', target);
+END $;
+'@ | Set-Content -Path $sql -Encoding utf8
+    & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
+    if($LASTEXITCODE -ne 0){throw 'Could not remove future child for BGW test'}
+    $remaining=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
+    if($remaining -ne $expected-1){throw 'Controlled child removal failed'}
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
     if($LASTEXITCODE -ne 0){throw 'initial stop failed'}
     $opts="-p $PgPort -c shared_preload_libraries=pg_partman_bgw -c pg_partman_bgw.dbname=postgres -c pg_partman_bgw.role=partman_maintainer -c pg_partman_bgw.interval=2 -c pg_partman_bgw.jobmon=off -c log_min_messages=debug1"
@@ -52,6 +72,9 @@ SELECT partman.create_parent(
        }
     }
     if(-not $success){throw 'No evidence of automated BGW maintenance by non-superuser after 80 seconds'}
+    $recovered=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
+    if($recovered -lt $expected){throw "BGW invocation logged but partition count not replenished: before=$expected after=$recovered"}
+
     Write-Host 'PASS: preload, non-superuser dynamic BGW and scheduled maintenance invocation'
 } catch{
     if(Test-Path $log){Get-Content $log -Tail 220}
