@@ -31,6 +31,9 @@ SELECT partman.create_parent(
   p_parent_table := 'public.pgextwin_bgw_parent',
   p_control := 'ts', p_interval := '1 day', p_premake := 1, p_jobmon := false
 );
+-- pg_partman intentionally skips empty partition sets; seed an actual routed row
+-- so maintenance computes a non-NULL current_partition_timestamp.
+INSERT INTO public.pgextwin_bgw_parent(id,ts) VALUES (1,now());
 '@ | Set-Content $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'least privilege setup failed'}
