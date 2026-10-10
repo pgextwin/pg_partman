@@ -1,0 +1,44 @@
+{
+  "contractVersion": 2,
+  "extension": "pg_partman",
+  "smokeTest": {
+    "script": "windows/ci/smoke-test.ps1"
+  },
+  "runtimeRequirements": {
+    "extensionCreation": "required",
+    "preload": "none",
+    "backgroundWorker": false,
+    "clientExecutable": {
+      "required": false,
+      "packagePaths": []
+    }
+  },
+  "testSetup": {
+    "preload": "none",
+    "backgroundWorker": false,
+    "settings": []
+  },
+  "coverage": {
+    "createExtension": "covered",
+    "backgroundWorker": "not-applicable",
+    "clientExecutable": "not-applicable",
+    "serverLogAssertions": "not-covered",
+    "upgrade": "not-covered"
+  },
+  "functionalScenarios": [
+    {
+      "id": "partition-maintenance-routing",
+      "description": "Create and maintain a time-partitioned parent, verify routed INSERTs and child partitions",
+      "evidence": [
+        "sql-result"
+      ]
+    },
+    {
+      "id": "sql-only-package",
+      "description": "Validate SQL-only packaging without an unsupported background worker",
+      "evidence": [
+        "sql-result"
+      ]
+    }
+  ]
+}
