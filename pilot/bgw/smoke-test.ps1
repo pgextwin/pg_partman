@@ -100,7 +100,7 @@ END $$;
     # a real restricted-role BGW attempt on a running isolated PostgreSQL.
     @'
 CREATE ROLE pgextwin_bgw_denied LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
-DO $
+DO $$
 BEGIN
   IF (SELECT rolsuper FROM pg_roles WHERE rolname='partman_maintainer')
      OR (SELECT rolsuper FROM pg_roles WHERE rolname='pgextwin_bgw_denied')
@@ -108,7 +108,7 @@ BEGIN
   THEN
      RAISE EXCEPTION 'BGW least privilege / denied-role guard is invalid';
   END IF;
-END $;
+END $$;
 '@ | Set-Content -Path $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'BGW forbidden-role ACL setup failed'}
