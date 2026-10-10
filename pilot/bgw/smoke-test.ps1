@@ -40,7 +40,7 @@ SELECT partman.create_parent(
     $expected=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
     if($expected -lt 2){throw "Expected multiple children before removal, found $expected"}
     @'
-DO $
+DO $$
 DECLARE target regclass;
 BEGIN
   SELECT inhrelid::regclass INTO target FROM pg_inherits
@@ -48,7 +48,7 @@ BEGIN
     ORDER BY inhrelid::regclass::text DESC LIMIT 1;
   IF target IS NULL THEN RAISE EXCEPTION 'No removable child'; END IF;
   EXECUTE format('DROP TABLE %s', target);
-END $;
+END $$;
 '@ | Set-Content -Path $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'Could not remove future child for BGW test'}
