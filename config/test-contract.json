@@ -20,7 +20,7 @@
   },
   "coverage": {
     "createExtension": "covered",
-    "backgroundWorker": "not-covered",
+    "backgroundWorker": "not-applicable",
     "clientExecutable": "not-applicable",
     "serverLogAssertions": "not-covered",
     "upgrade": "not-covered"
