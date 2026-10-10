@@ -1,7 +1,5 @@
-# Optional pg_partman Windows background worker (experimental)
+# pg_partman native Windows BGW technical evidence
 
-Not part of the existing SQL-only `v5.5.0-windows.1` Release. No BGW distribution is authorized or promised.
+PG14–18 MSVC compilation, actual PostgreSQL preload, least-privilege maintenance side-effects and scheduled partition replenishment passed in [CI 38067766523](https://github.com/pgextwin/pg_partman/actions/runs/38067766523). This code is shared with the next optional BGW-capable packaged Release. Existing `v5.5.0-windows.1` remains immutable SQL-only.
 
-This isolated PostgreSQL 17 pilot attempts an MSVC build of the **unmodified SHA-pinned** upstream 5.5.0 `src/pg_partman_bgw.c`, audits DLL entrypoints/imports, and tests real `shared_preload_libraries=pg_partman_bgw` startup with `pg_partman_bgw.role=partman_maintainer` and a non-superuser maintenance invocation. Failures remain visible; this does not alter the existing default package or its verified SQL-only behavior.
-
-Acceptance for a future optional BGW Release additionally requires PostgreSQL 14–18, real child partition creation from BGW alone, shutdown/restart and signal behavior, negative privilege tests, signed binary provenance, checksums and supply-chain reports. See Issue #3.
+BGW is off until explicitly configured; SQL-only usage must continue passing separately. Packaging is authorized only after the *fresh* shared attested-release matrix, provenance, ZIP and supply-chain checks succeed. Production upgrades, high concurrency, custom authorization and failover need separate acceptance. See docs/windows.md and issue #3.

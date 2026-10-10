@@ -15,4 +15,11 @@ foreach($group in @('sql/types','sql/tables','sql/functions','sql/procedures')){
 $path=Join-Path $UpstreamDir 'sql/pg_partman--5.5.0.sql'
 [IO.File]::WriteAllText($path,($chunks -join [Environment]::NewLine) + [Environment]::NewLine,[Text.UTF8Encoding]::new($false))
 if((Get-Item $path).Length -lt 100000){throw 'Generated SQL unexpectedly small'}
-Write-Host 'SQL-only build: upstream NO_BGW=1 equivalent. No native DLL supplied.'
+# Optional BGW is compiled from the same SHA-pinned upstream source, but
+# SQL-only installations continue to work without shared_preload_libraries.
+$bgwBuild = Join-Path $PSScriptRoot '../../pilot/bgw/build.ps1'
+& $bgwBuild -PgRoot $PgRoot -UpstreamDir $UpstreamDir
+if(-not(Test-Path (Join-Path $PgRoot 'lib/pg_partman_bgw.dll'))){
+    throw 'Optional BGW DLL build did not produce a deployable Windows module'
+}
+Write-Host 'SQL package and opt-in native BGW compiled from pinned upstream source.'

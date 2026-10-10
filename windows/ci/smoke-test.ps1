@@ -66,3 +66,11 @@ DROP SCHEMA partman CASCADE;
 } finally {
     if(Test-Path (Join-Path $data 'postmaster.pid')){& $pgctl -D $data -m immediate stop}
 }
+
+# Independent server lifecycle test: the SQL-only instance above has stopped.
+# A separate cluster exercises actual BGW registration and child replenishment
+# as an unprivileged maintenance role, then shuts down cleanly.
+$bgwSmoke=Join-Path $PSScriptRoot '../../pilot/bgw/smoke-test.ps1'
+& $bgwSmoke -PgRoot $PgRoot -PgPort $PgPort -PostgreSqlMajor $PostgreSqlMajor
+if($LASTEXITCODE -ne 0){throw 'Native BGW smoke test returned failure'}
+Write-Host 'PASS: SQL-only usage AND opt-in BGW lifecycle/replenishment.'

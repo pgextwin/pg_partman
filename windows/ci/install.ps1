@@ -11,4 +11,8 @@ foreach($path in @('pg_partman.control','sql/pg_partman--5.5.0.sql')){
 $updates=@(Get-ChildItem (Join-Path $UpstreamDir 'updates') -File -Filter 'pg_partman--*.sql')
 if($updates.Count -lt 1){throw 'No upstream upgrade SQL'}
 foreach($script in $updates){Copy-Item $script.FullName $dest -Force}
-Write-Host 'SQL-only install completed; BGW not included.'
+$bgw = Join-Path $PgRoot 'lib/pg_partman_bgw.dll'
+if(-not(Test-Path $bgw) -or (Get-Item $bgw).Length -lt 10000){
+    throw 'Missing or truncated native pg_partman_bgw.dll after build'
+}
+Write-Host 'SQL installation completed. Native BGW DLL is available; preload is optional.'

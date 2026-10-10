@@ -6,23 +6,40 @@
   },
   "runtimeRequirements": {
     "extensionCreation": "required",
-    "preload": "none",
-    "backgroundWorker": false,
+    "preload": "optional",
+    "backgroundWorker": true,
     "clientExecutable": {
       "required": false,
       "packagePaths": []
     }
   },
   "testSetup": {
-    "preload": "none",
-    "backgroundWorker": false,
-    "settings": []
+    "preload": "shared",
+    "backgroundWorker": true,
+    "settings": [
+      {
+        "name": "pg_partman_bgw.dbname",
+        "value": "postgres"
+      },
+      {
+        "name": "pg_partman_bgw.role",
+        "value": "partman_maintainer"
+      },
+      {
+        "name": "pg_partman_bgw.interval",
+        "value": "2"
+      },
+      {
+        "name": "pg_partman_bgw.jobmon",
+        "value": "off"
+      }
+    ]
   },
   "coverage": {
     "createExtension": "covered",
-    "backgroundWorker": "not-applicable",
+    "backgroundWorker": "covered",
     "clientExecutable": "not-applicable",
-    "serverLogAssertions": "not-covered",
+    "serverLogAssertions": "covered",
     "upgrade": "not-covered"
   },
   "functionalScenarios": [
@@ -34,10 +51,19 @@
       ]
     },
     {
-      "id": "sql-only-package",
-      "description": "Validate SQL-only packaging without an unsupported background worker",
+      "id": "sql-without-preload",
+      "description": "Verify SQL partition routing remains functional without loading the optional BGW DLL.",
       "evidence": [
         "sql-result"
+      ]
+    },
+    {
+      "id": "bgw-automatic-partition-replenishment",
+      "description": "Preload optional Windows background worker and verify an unprivileged maintenance role automatically replenishes a deliberately removed partition on PostgreSQL 14–18.",
+      "evidence": [
+        "background-worker-side-effect",
+        "sql-result",
+        "server-log"
       ]
     }
   ]
