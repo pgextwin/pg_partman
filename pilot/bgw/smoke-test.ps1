@@ -52,6 +52,21 @@ END $$;
 '@ | Set-Content -Path $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'Could not remove future child for BGW test'}
+    # Initial child partitions were created by the setup superuser. Grant
+    # read access ONLY to this test parent's children, not all public tables.
+    @'
+DO $
+DECLARE child record;
+BEGIN
+  FOR child IN SELECT inhrelid::regclass AS table_name FROM pg_inherits
+               WHERE inhparent='public.pgextwin_bgw_parent'::regclass
+  LOOP
+    EXECUTE format('GRANT SELECT ON %s TO partman_maintainer', child.table_name);
+  END LOOP;
+END $;
+'@ | Set-Content -Path $sql -Encoding utf8
+    & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
+    if($LASTEXITCODE -ne 0){throw 'Scoped child grants failed'}
     $remaining=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
     if($remaining -ne $expected-1){throw 'Controlled child removal failed'}
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
@@ -60,20 +75,20 @@ END $$;
     & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $opts start
     if($LASTEXITCODE -ne 0){throw 'BGW shared preload startup failed'}
     $success=$false
-    for($i=0;$i -lt 40;$i++){
+    $recovered=0
+    for($i=0;$i -lt 45;$i++){
        Start-Sleep -Seconds 2
        $text=Get-Content $log -Raw
-       if($text -match 'run_maintenance_proc' -and $text -match 'called by role partman_maintainer'){
-          $success=$true
-          break
-       }
        if($text -match 'FATAL:|permission denied|could not load library'){
-          throw 'BGW failed to start, connect or execute with non-superuser role'
+          throw 'BGW failed to start, connect or maintain partitions with non-superuser role'
        }
+       $called=($text -match 'run_maintenance_proc' -and $text -match 'called by role partman_maintainer')
+       $out=@(& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -v ON_ERROR_STOP=1 -c $countCmd)
+       if($LASTEXITCODE -ne 0){throw 'Failed to query partition catalog during BGW test'}
+       $recovered=[int]($out | Select-Object -Last 1).Trim()
+       if($called -and $recovered -ge $expected){$success=$true;break}
     }
-    if(-not $success){throw 'No evidence of automated BGW maintenance by non-superuser after 80 seconds'}
-    $recovered=[int]((& (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -At -c $countCmd | Select-Object -Last 1).Trim())
-    if($recovered -lt $expected){throw "BGW invocation logged but partition count not replenished: before=$expected after=$recovered"}
+    if(-not $success){throw "BGW did not replenish partitions as non-superuser within 90 seconds: expected=$expected actual=$recovered"}
 
     Write-Host 'PASS: preload, non-superuser dynamic BGW and scheduled maintenance invocation'
 } catch{
