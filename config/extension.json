@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "name": "pg_partman",
+  "upstream": {
+    "repository": "pgpartman/pg_partman",
+    "ref": "v5.5.0",
+    "version": "5.5.0",
+    "commit": "f7e83b9c441c7e97066d815bbe14e02a9dc5ff94"
+  },
+  "postgresql": {
+    "majors": [
+      14,
+      15,
+      16,
+      17,
+      18
+    ]
+  },
+  "windows": {
+    "architecture": "x64"
+  },
+  "license": {
+    "verifyAgainstUpstream": true,
+    "upstreamPath": "LICENSE.txt"
+  }
+}
