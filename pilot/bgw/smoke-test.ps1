@@ -55,7 +55,7 @@ END $$;
     # Initial child partitions were created by the setup superuser. Grant
     # read access ONLY to this test parent's children, not all public tables.
     @'
-DO $
+DO $$
 DECLARE child record;
 BEGIN
   FOR child IN SELECT inhrelid::regclass AS table_name FROM pg_inherits
@@ -63,7 +63,7 @@ BEGIN
   LOOP
     EXECUTE format('GRANT SELECT ON %s TO partman_maintainer', child.table_name);
   END LOOP;
-END $;
+END $$;
 '@ | Set-Content -Path $sql -Encoding utf8
     & (Join-Path $bin 'psql.exe') -h 127.0.0.1 -p $PgPort -U postgres -v ON_ERROR_STOP=1 -f $sql
     if($LASTEXITCODE -ne 0){throw 'Scoped child grants failed'}
