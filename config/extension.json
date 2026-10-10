@@ -21,6 +21,11 @@
   },
   "license": {
     "verifyAgainstUpstream": true,
-    "upstreamPath": "LICENSE.txt"
+    "files": [
+      {
+        "repositoryPath": "LICENSE.txt",
+        "upstreamPath": "LICENSE.txt"
+      }
+    ]
   }
 }
