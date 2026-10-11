@@ -115,13 +115,16 @@ END $$;
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
     if($LASTEXITCODE -ne 0){throw 'BGW graceful stop failed'}
     $deniedOpts=$opts.Replace('pg_partman_bgw.role=partman_maintainer','pg_partman_bgw.role=pgextwin_bgw_denied')
-    $logOffset=(Get-Content $log -Raw).Length
+    # Isolate each restart's log: pg_ctl -l can truncate/recreate a file,
+    # so byte/character offsets from a prior session are not reliable.
+    $log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-denied.log"
+    if(Test-Path $log){Remove-Item $log -Force}
     & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $deniedOpts start
     if($LASTEXITCODE -ne 0){throw 'BGW denied-role server start failed'}
     $negativeObserved=$false
     for($i=0;$i -lt 35;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-Content $log -Raw
         if($delta -match 'permission denied' -and $delta -match 'pgextwin_bgw_denied'){
             $negativeObserved=$true
             break
@@ -136,13 +139,14 @@ END $$;
     # maintenance role, not merely preserve stale log lines from the first run.
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
     if($LASTEXITCODE -ne 0){throw 'BGW denied-role cleanup stop failed'}
-    $logOffset=(Get-Content $log -Raw).Length
+    $log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-restarted.log"
+    if(Test-Path $log){Remove-Item $log -Force}
     & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $opts start
     if($LASTEXITCODE -ne 0){throw 'BGW normal restart failed'}
     $restartOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-Content $log -Raw
         if($delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'){
             $restartOK=$true
             break
@@ -159,13 +163,14 @@ END $$;
     # server crash-recovery and a newly invoked worker after restart.
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m immediate stop
     if($LASTEXITCODE -ne 0){throw 'Controlled immediate PostgreSQL shutdown failed'}
-    $logOffset=(Get-Content $log -Raw).Length
+    $log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-postcrash.log"
+    if(Test-Path $log){Remove-Item $log -Force}
     & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $opts start
     if($LASTEXITCODE -ne 0){throw 'BGW post-crash server recovery/start failed'}
     $crashOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-Content $log -Raw
         $replayed=$delta -match 'database system was interrupted|automatic recovery in progress|redo starts at'
         $worker=$delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'
         if($replayed -and $worker){$crashOK=$true;break}
