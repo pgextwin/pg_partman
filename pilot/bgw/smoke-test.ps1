@@ -7,6 +7,19 @@ $tmp=if($env:RUNNER_TEMP){$env:RUNNER_TEMP}else{[IO.Path]::GetTempPath()}
 $data=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-cluster"
 $log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor.log"
 $sql=Join-Path $tmp 'pgextwin-bgw-prep.sql'
+# pg_ctl -l may truncate/recreate the same log when restarting a cluster.
+# Preserve the restart-scoped evidence boundary even if its new length is
+# shorter than the previous checkpoint; do not infer success from old logs.
+function Get-LogSinceCheckpoint {
+    param([Parameter(Mandatory=$true)][string]$Path,
+          [Parameter(Mandatory=$true)][ref]$Checkpoint)
+    $contents=[string](Get-Content -LiteralPath $Path -Raw -ErrorAction Stop)
+    if($contents.Length -lt $Checkpoint.Value){
+        Write-Host 'PostgreSQL log restarted/truncated; resetting read checkpoint for this restart.'
+        $Checkpoint.Value=0
+    }
+    return $contents.Substring([int]$Checkpoint.Value)
+}
 if(Test-Path $data){Remove-Item $data -Recurse -Force}
 if(Test-Path $log){Remove-Item $log -Force}
 try{
@@ -121,7 +134,7 @@ END $$;
     $negativeObserved=$false
     for($i=0;$i -lt 35;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-LogSinceCheckpoint -Path $log -Checkpoint ([ref]$logOffset)
         if($delta -match 'permission denied' -and $delta -match 'pgextwin_bgw_denied'){
             $negativeObserved=$true
             break
@@ -142,7 +155,7 @@ END $$;
     $restartOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-LogSinceCheckpoint -Path $log -Checkpoint ([ref]$logOffset)
         if($delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'){
             $restartOK=$true
             break
@@ -165,7 +178,7 @@ END $$;
     $crashOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=Get-LogSinceCheckpoint -Path $log -Checkpoint ([ref]$logOffset)
         $replayed=$delta -match 'database system was interrupted|automatic recovery in progress|redo starts at'
         $worker=$delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'
         if($replayed -and $worker){$crashOK=$true;break}
