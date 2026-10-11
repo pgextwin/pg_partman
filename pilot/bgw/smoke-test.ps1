@@ -6,9 +6,14 @@ $bin=Join-Path $PgRoot 'bin'
 $tmp=if($env:RUNNER_TEMP){$env:RUNNER_TEMP}else{[IO.Path]::GetTempPath()}
 $data=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-cluster"
 $log=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor.log"
+$deniedLog=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-denied.log"
+$restartLog=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-restart.log"
+$crashLog=Join-Path $tmp "pgextwin-bgw-pg$PostgreSqlMajor-crash.log"
 $sql=Join-Path $tmp 'pgextwin-bgw-prep.sql'
 if(Test-Path $data){Remove-Item $data -Recurse -Force}
-if(Test-Path $log){Remove-Item $log -Force}
+foreach($path in @($log,$deniedLog,$restartLog,$crashLog)){
+    if(Test-Path $path){Remove-Item $path -Force}
+}
 try{
     & (Join-Path $bin 'initdb.exe') -D $data -U postgres -A trust --encoding=UTF8 --no-locale
     if($LASTEXITCODE -ne 0){throw 'initdb failed'}
@@ -115,13 +120,13 @@ END $$;
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
     if($LASTEXITCODE -ne 0){throw 'BGW graceful stop failed'}
     $deniedOpts=$opts.Replace('pg_partman_bgw.role=partman_maintainer','pg_partman_bgw.role=pgextwin_bgw_denied')
-    $logOffset=(Get-Content $log -Raw).Length
-    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $deniedOpts start
+    # A new log is exclusive evidence for this denied-role restart.
+    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $deniedLog -o $deniedOpts start
     if($LASTEXITCODE -ne 0){throw 'BGW denied-role server start failed'}
     $negativeObserved=$false
     for($i=0;$i -lt 35;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=if(Test-Path $deniedLog){Get-Content $deniedLog -Raw}else{''}
         if($delta -match 'permission denied' -and $delta -match 'pgextwin_bgw_denied'){
             $negativeObserved=$true
             break
@@ -136,13 +141,13 @@ END $$;
     # maintenance role, not merely preserve stale log lines from the first run.
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m fast stop
     if($LASTEXITCODE -ne 0){throw 'BGW denied-role cleanup stop failed'}
-    $logOffset=(Get-Content $log -Raw).Length
-    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $opts start
+    # A new file excludes historical denied-role error messages.
+    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $restartLog -o $opts start
     if($LASTEXITCODE -ne 0){throw 'BGW normal restart failed'}
     $restartOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=if(Test-Path $restartLog){Get-Content $restartLog -Raw}else{''}
         if($delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'){
             $restartOK=$true
             break
@@ -159,13 +164,13 @@ END $$;
     # server crash-recovery and a newly invoked worker after restart.
     & (Join-Path $bin 'pg_ctl.exe') -D $data -m immediate stop
     if($LASTEXITCODE -ne 0){throw 'Controlled immediate PostgreSQL shutdown failed'}
-    $logOffset=(Get-Content $log -Raw).Length
-    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $log -o $opts start
+    # Fresh crash-recovery evidence must come from a distinct logfile.
+    & (Join-Path $bin 'pg_ctl.exe') -D $data -l $crashLog -o $opts start
     if($LASTEXITCODE -ne 0){throw 'BGW post-crash server recovery/start failed'}
     $crashOK=$false
     for($i=0;$i -lt 40;$i++){
         Start-Sleep -Seconds 2
-        $delta=(Get-Content $log -Raw).Substring($logOffset)
+        $delta=if(Test-Path $crashLog){Get-Content $crashLog -Raw}else{''}
         $replayed=$delta -match 'database system was interrupted|automatic recovery in progress|redo starts at'
         $worker=$delta -match 'run_maintenance_proc' -and $delta -match 'called by role partman_maintainer'
         if($replayed -and $worker){$crashOK=$true;break}
@@ -179,7 +184,12 @@ END $$;
     Write-Host 'PASS: controlled immediate stop, crash recovery and fresh unprivileged BGW maintenance.'
 
 } catch{
-    if(Test-Path $log){Get-Content $log -Tail 220}
+    foreach($path in @($log,$deniedLog,$restartLog,$crashLog)){
+        if(Test-Path $path){
+            Write-Host "BGW stage log: $path"
+            Get-Content $path -Tail 100
+        }
+    }
     throw
 } finally{
     if(Test-Path (Join-Path $data 'postmaster.pid')){& (Join-Path $bin 'pg_ctl.exe') -D $data -m immediate stop}
