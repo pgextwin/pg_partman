@@ -1,11 +1,22 @@
-# pg_partman — 署名付き Windows x64 バイナリ
+# pg_partman — Windows x64 バイナリ
 
 [English](README.md) | 日本語
 
-PostgreSQL 14〜18（Windows x64）向けの上流 pg_partman 5.5.0 のコミュニティ製バイナリです。上流のコミットは `f7e83b9c441c7e97066d815bbe14e02a9dc5ff94` に固定し、PostgreSQL ライセンスを原本と照合します。PG14 はサポート終了日（2026-11-12）までを対象とします。
+[pg_partman](https://github.com/pgpartman/pg_partman)の**非公式Windows x64バイナリ**を配布しています。日時やIDに基づくパーティションを保守する拡張機能です。
 
-- **既存の [v5.5.0-windows.1](https://github.com/pgextwin/pg_partman/releases/tag/v5.5.0-windows.1) は SQL 専用版**です。BGW は同梱されず、手動・外部スケジューラーで保守します。
-- **[v5.5.0-windows.2](https://github.com/pgextwin/pg_partman/releases/tag/v5.5.0-windows.2) は正式公開済み**です。従来のSQL機能は事前ロードなしで利用可能で、`lib/pg_partman_bgw.dll` を任意機能として同梱します。PG14〜18の5バージョンすべてで、BGWの実動作、非スーパーユーザーによる子パーティション自動補充、ZIP・SPDX SBOM・Grype・SHA256・GitHub証明が[署名付きRelease CI](https://github.com/pgextwin/pg_partman/actions/runs/38090908572)で成功しました。
-- DLL をコピーするだけでは BGW は動作しません。任意に `shared_preload_libraries = 'pg_partman_bgw'`、`pg_partman_bgw.dbname`、`pg_partman_bgw.role`、`pg_partman_bgw.interval` を設定し、PostgreSQL を再起動します。メンテナンス用の非スーパーユーザーには、対象親子テーブルと partman スキーマに必要な権限のみを付与してください。
+## ダウンロードと対応環境
 
-[インストール方法と検証範囲](docs/windows_ja.md)を参照してください。対応するPGメジャー専用ZIPを選び、SHA256・SPDX SBOM・Grype・GitHub証明を検証してください。アップグレード、フェイルオーバー、他の事前ロード拡張との組合せは別途検証が必要です。
+[最新の公開Release](https://github.com/pgextwin/pg_partman/releases/latest)から、利用中のPostgreSQLメジャーバージョンと一致するZIPを選んでください。[過去のReleases](https://github.com/pgextwin/pg_partman/releases)も確認できます。PostgreSQL **14〜18**向けの配布状況は[pgextwinカタログ](https://pgextwin.github.io/website/ja/)を参照してください。PostgreSQL 14のコミュニティサポートは2026年11月12日に終了します。
+
+## インストール
+
+1. バックアップを取得し、[上流の導入手順](https://github.com/pgpartman/pg_partman)を確認します。
+2. 既存ファイルを置き換える前にPostgreSQLを停止します。対応するZIP内のlib/とshare/extension/以下を、PostgreSQLの同名ディレクトリに配置します。
+3. v5.5.0-windows.1はSQL機能のみを含みます。v5.5.0-windows.2には任意利用のpg_partman_bgw.dllも付属します。SQL機能だけなら事前ロードは不要です。バックグラウンドワーカーを使う場合は、上流の説明に従ってshared_preload_librariesとpg_partman_bgw.dbname、pg_partman_bgw.role、pg_partman_bgw.intervalを設定してPostgreSQLを再起動します。
+4. 必要な設定を反映してPostgreSQLを起動し、利用するデータベースでCREATE EXTENSION pg_partman;を実行します。
+
+ReleaseのSHA256SUMS.txtでZIPを照合してください。SPDX形式のSBOM、脆弱性レポート、署名付き証明の有無はReleaseで確認できます。本番導入前に検証環境で動作を確認してください。
+
+## ライセンス
+
+利用方法や制限事項は[上流のpg_partman](https://github.com/pgpartman/pg_partman)を参照してください。本配布は上流公式のWindows版ではありません。ライセンスは同梱の表記に従います。
