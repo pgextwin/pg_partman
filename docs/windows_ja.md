@@ -2,7 +2,7 @@
 
 ## リリースの区分
 
-既存 [v5.5.0-windows.1](https://github.com/pgextwin/pg_partman/releases/tag/v5.5.0-windows.1) はSQL専用で変更しません。新しいZIPに `lib/pg_partman_bgw.dll` が存在する場合だけ、任意のBGWを有効化できます。PG14〜18それぞれ専用のZIPを使用し、PG14は2026-11-12のEOLまで対象です。
+既存の [v5.5.0-windows.1](https://github.com/pgextwin/pg_partman/releases/tag/v5.5.0-windows.1) はSQL専用で変更しません。新しいZIPに `lib/pg_partman_bgw.dll` が含まれる場合に限り、任意のBGWを有効にできます。PG14〜18それぞれの専用ZIPを使用し、PG14は2026-11-12のEOLまで対象です。
 
 ## SQL専用の導入
 
@@ -10,7 +10,7 @@ SHA256SUMS、出自証明、SBOMを検証し、ZIP内の `share/extension` を�
 
 ## BGWを任意で有効化
 
-対象PGメジャー用の `lib/pg_partman_bgw.dll` を停止中のPostgreSQLの `lib` に配置し、下記を設定して再起動してください。既存の `shared_preload_libraries` があれば他の拡張名を保持して追加します。
+対象のPostgreSQLメジャーバージョン向け `lib/pg_partman_bgw.dll` を、停止中のPostgreSQLの `lib` に配置し、以下を設定して再起動してください。既存の `shared_preload_libraries` にほかの拡張機能が指定されている場合は、その設定を残して追加します。
 
 ```conf
 shared_preload_libraries = 'pg_partman_bgw'

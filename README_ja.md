@@ -12,10 +12,10 @@
 
 1. バックアップを取得し、[上流の導入手順](https://github.com/pgpartman/pg_partman)を確認します。
 2. 既存ファイルを置き換える前にPostgreSQLを停止します。対応するZIP内のlib/とshare/extension/以下を、PostgreSQLの同名ディレクトリに配置します。
-3. v5.5.0-windows.1はSQL機能のみを含みます。v5.5.0-windows.2には任意利用のpg_partman_bgw.dllも付属します。SQL機能だけなら事前ロードは不要です。バックグラウンドワーカーを使う場合は、上流の説明に従ってshared_preload_librariesとpg_partman_bgw.dbname、pg_partman_bgw.role、pg_partman_bgw.intervalを設定してPostgreSQLを再起動します。
-4. 必要な設定を反映してPostgreSQLを起動し、利用するデータベースでCREATE EXTENSION pg_partman;を実行します。
+3. `v5.5.0-windows.1`はSQL機能のみを含みます。`v5.5.0-windows.2`には任意で使用できる`pg_partman_bgw.dll`も付属します。SQL機能だけを使う場合、事前ロードは不要です。バックグラウンドワーカーを使う場合は、上流の説明に従い`shared_preload_libraries`、`pg_partman_bgw.dbname`、`pg_partman_bgw.role`、`pg_partman_bgw.interval`を設定し、PostgreSQLを再起動します。
+4. 必要な設定を反映してPostgreSQLを起動し、利用するデータベースで`CREATE EXTENSION pg_partman;`を実行します。
 
-ReleaseのSHA256SUMS.txtでZIPを照合してください。SPDX形式のSBOM、脆弱性レポート、署名付き証明の有無はReleaseで確認できます。本番導入前に検証環境で動作を確認してください。
+ダウンロードしたZIPを、Releaseに掲載された`SHA256SUMS.txt`と照合してください。SPDX形式のSBOM、脆弱性レポート、署名付き証明の有無はReleaseで確認できます。本番環境に導入する前に、検証環境で動作を確認してください。
 
 ## ライセンス
 
