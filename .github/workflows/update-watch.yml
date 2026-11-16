@@ -4,7 +4,7 @@ name: Upstream candidate after verified central daily fleet scan
 # PUBLISH remains separately manually authorized and disabled here.
 on:
   schedule:
-    - cron: "30 * * * *"
+    - cron: "35 * * * *"
   push:
     branches: [main]
     paths:
