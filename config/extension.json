@@ -3,9 +3,9 @@
   "name": "pg_partman",
   "upstream": {
     "repository": "pgpartman/pg_partman",
-    "ref": "v5.5.0",
-    "version": "5.5.0",
-    "commit": "f7e83b9c441c7e97066d815bbe14e02a9dc5ff94"
+    "ref": "v5.5.1",
+    "version": "5.5.1",
+    "commit": "e0a6c384a6c77846d2560f9251089339c9637814"
   },
   "postgresql": {
     "majors": [

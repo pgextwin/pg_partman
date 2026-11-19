@@ -3,7 +3,7 @@ param([Parameter(Mandatory=$true)][string]$PgRoot,[Parameter(Mandatory=$true)][s
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $source=Join-Path $UpstreamDir 'src/pg_partman_bgw.c'
-$expected='f7e83b9c441c7e97066d815bbe14e02a9dc5ff94'
+$expected='e0a6c384a6c77846d2560f9251089339c9637814'
 $actual=(& git -C $UpstreamDir rev-parse HEAD).Trim().ToLowerInvariant()
 if($LASTEXITCODE -ne 0 -or $actual -ne $expected){throw 'Pinned upstream source mismatch'}
 $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio/Installer/vswhere.exe'

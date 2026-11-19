@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: pgpartman/pg_partman
-          ref: f7e83b9c441c7e97066d815bbe14e02a9dc5ff94
+          ref: e0a6c384a6c77846d2560f9251089339c9637814
           path: upstream
       - name: Check out common install scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
