@@ -16,7 +16,7 @@ if(Test-Path $zip){Remove-Item $zip -Force}
 $share=Join-Path $stage 'share/extension'
 New-Item -ItemType Directory -Force $share | Out-Null
 Copy-Item (Join-Path $UpstreamDir 'pg_partman.control') $share
-Copy-Item (Join-Path $UpstreamDir 'sql/pg_partman--5.5.0.sql') $share
+Copy-Item (Join-Path $UpstreamDir 'sql/pg_partman--5.5.1.sql') $share
 Get-ChildItem (Join-Path $UpstreamDir 'updates') -Filter 'pg_partman--*.sql' -File | ForEach-Object {Copy-Item $_.FullName $share}
 # Keep the verified SQL-only payload independent from the optional BGW.
 # PGROOT is the same major-specific installation used by Build + smoke CI.

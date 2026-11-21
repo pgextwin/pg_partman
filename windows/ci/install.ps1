@@ -3,7 +3,7 @@ param([Parameter(Mandatory=$true)][string]$PgRoot,[Parameter(Mandatory=$true)][s
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $dest=Join-Path $PgRoot 'share/extension'
-foreach($path in @('pg_partman.control','sql/pg_partman--5.5.0.sql')){
+foreach($path in @('pg_partman.control','sql/pg_partman--5.5.1.sql')){
     $file=Join-Path $UpstreamDir $path
     if(-not(Test-Path $file)){throw "Missing file $file"}
     Copy-Item $file $dest -Force
