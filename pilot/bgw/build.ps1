@@ -15,11 +15,12 @@ $def=Join-Path $dir 'pg_partman_bgw.def'
 @('LIBRARY pg_partman_bgw','EXPORTS','    Pg_magic_func','    _PG_init','    pg_partman_bgw_main','    pg_partman_bgw_run_maint') | Set-Content $def -Encoding ascii
 $output=Join-Path $dir 'pg_partman_bgw.dll'
 $cmd=Join-Path $dir 'pgextwin-bgw-msvc.cmd'
+# PostgreSQL 19 server headers require C11.
 @"
 @echo off
 call "$devcmd" -arch=x64 -host_arch=x64
 if errorlevel 1 exit /b 1
-cl /nologo /LD /MD /O2 /W2 /DWIN32 /I"$PgRoot\include\server\port\win32_msvc" /I"$PgRoot\include\server\port\win32" /I"$PgRoot\include\server" /I"$PgRoot\include" "$source" /link /DLL /DEF:"$def" /LIBPATH:"$PgRoot\lib" postgres.lib /OUT:"$output"
+cl /nologo /std:c11 /LD /MD /O2 /W2 /DWIN32 /I"$PgRoot\include\server\port\win32_msvc" /I"$PgRoot\include\server\port\win32" /I"$PgRoot\include\server" /I"$PgRoot\include" "$source" /link /DLL /DEF:"$def" /LIBPATH:"$PgRoot\lib" postgres.lib /OUT:"$output"
 if errorlevel 1 exit /b 1
 dumpbin /nologo /exports "$output"
 if errorlevel 1 exit /b 1
