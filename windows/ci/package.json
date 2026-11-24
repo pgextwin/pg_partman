@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "distribution": "dll-sql",
+  "files": [
+    {
+      "source": "upstream",
+      "path": "pg_partman.control",
+      "destination": "share/extension/pg_partman.control",
+      "targets": [
+        "install",
+        "zip"
+      ]
+    },
+    {
+      "source": "upstream",
+      "path": "sql/pg_partman--5.5.1.sql",
+      "destination": "share/extension/pg_partman--5.5.1.sql",
+      "targets": [
+        "install",
+        "zip"
+      ]
+    },
+    {
+      "source": "upstream",
+      "path": "updates/pg_partman--*.sql",
+      "destination": "share/extension/{fileName}",
+      "targets": [
+        "install",
+        "zip"
+      ],
+      "expectedCount": 101
+    },
+    {
+      "source": "buildOutput",
+      "path": "lib/pg_partman_bgw.dll",
+      "destination": "lib/pg_partman_bgw.dll",
+      "targets": [
+        "zip"
+      ]
+    },
+    {
+      "source": "license",
+      "path": "LICENSE.txt",
+      "destination": "LICENSE.txt",
+      "targets": [
+        "zip"
+      ]
+    },
+    {
+      "source": "upstream",
+      "path": "README.md",
+      "destination": "UPSTREAM-README.md",
+      "targets": [
+        "zip"
+      ]
+    },
+    {
+      "source": "packaging",
+      "path": "docs/windows.md",
+      "destination": "WINDOWS-INSTALL.md",
+      "targets": [
+        "zip"
+      ]
+    },
+    {
+      "source": "packaging",
+      "path": "docs/windows_ja.md",
+      "destination": "WINDOWS-INSTALL-ja.md",
+      "targets": [
+        "zip"
+      ]
+    }
+  ],
+  "packageInfo": [
+    "pg_partman Windows SQL + optional native BGW package",
+    "Upstream repository: {upstreamRepository}",
+    "Upstream ref: {upstreamRef}",
+    "Upstream commit: {upstreamCommit}",
+    "Version: {version}",
+    "PostgreSQL major: {pgMajor}",
+    "PostgreSQL tested: {pgTested}",
+    "Architecture: Windows x64",
+    "Packaging mode: SQL-only by default, optional native BGW (preload opt-in)",
+    "Compiler: MSVC (BGW); SQL functions remain pure SQL/PLpgSQL",
+    "License: PostgreSQL; see LICENSE.txt",
+    "BGW: optional lib/pg_partman_bgw.dll; only configured databases run scheduled maintenance."
+  ],
+  "packageInfoFinalNewline": true
+}
