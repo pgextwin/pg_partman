@@ -22,4 +22,9 @@ $bgwBuild = Join-Path $PSScriptRoot '../../pilot/bgw/build.ps1'
 if(-not(Test-Path (Join-Path $PgRoot 'lib/pg_partman_bgw.dll'))){
     throw 'Optional BGW DLL build did not produce a deployable Windows module'
 }
+# Also emit the runtime-tested DLL as a build output so the shared packaging
+# manifest (windows/ci/package.json) can collect it from build/lib.
+$bgwOutDir = Join-Path $PSScriptRoot '../../build/lib'
+New-Item -ItemType Directory -Force $bgwOutDir | Out-Null
+Copy-Item (Join-Path $PgRoot 'lib/pg_partman_bgw.dll') (Join-Path $bgwOutDir 'pg_partman_bgw.dll') -Force
 Write-Host 'SQL package and opt-in native BGW compiled from pinned upstream source.'
