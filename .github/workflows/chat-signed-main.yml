@@ -31,7 +31,7 @@ jobs:
       id-token: write
       attestations: write
       artifact-metadata: write
-    uses: pgextwin/build/.github/workflows/chat-signed-main-source.yml@96893a49558a0dd43ad734d5af4f237310858a9a
+    uses: pgextwin/build/.github/workflows/chat-signed-main-source.yml@fcb9b197ed63e071b59f63df03e3cf0a38997cbc
     with:
       request_issue: 54
       extension_config_path: config/extension.json
